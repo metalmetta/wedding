@@ -241,6 +241,24 @@
   }
   .guest-row:hover .rm-btn { opacity: 1; }
   .rm-btn:hover { background: rgba(196,83,74,0.1); border-color: var(--red-soft); color: var(--red-soft); }
+  .diet-btn {
+    opacity: 0.75;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: none;
+    border: 1px solid var(--ink-faint);
+    cursor: pointer;
+    font-size: 10px;
+    color: var(--ink-light);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+    flex-shrink: 0;
+    margin-right: 2px;
+  }
+  .guest-row:hover .diet-btn { opacity: 1; }
+  .diet-btn:hover { border-color: var(--gold); color: var(--gold); background: rgba(184,147,90,0.08); }
 
   .add-row {
     padding: 6px 12px;
@@ -353,7 +371,6 @@
     color: var(--ink-light);
     margin-top: 2px;
   }
-
   .host-view {
     display: none;
     margin-top: 1rem;
@@ -438,14 +455,6 @@
         <button class="btn" onclick="applyConstraints()">Apply rules</button>
       </div>
       <p class="hint">Use `+` for must-sit-with and `!` for must-not-sit-with.</p>
-    </div>
-    <div class="panel">
-      <h3>Dietary / allergy</h3>
-      <textarea id="dietary-input" placeholder="One guest per line&#10;Example: Alice: vegan, nuts&#10;Example: Bob: gluten-free"></textarea>
-      <div class="panel-actions">
-        <button class="btn" onclick="applyDietary()">Apply dietary</button>
-      </div>
-      <p class="hint">Tags appear per table and in print exports.</p>
     </div>
     <div class="panel">
       <h3>Real-time collaboration</h3>
@@ -906,17 +915,15 @@ function applyConstraints() {
   render();
 }
 
-function applyDietary() {
-  const map = {};
-  const lines = document.getElementById('dietary-input').value.split('\n').map(l => l.trim()).filter(Boolean);
-  for (const line of lines) {
-    const [namePart, tagsPart] = line.split(':');
-    if (!namePart || !tagsPart) continue;
-    const g = findGuestByName(namePart.trim());
-    if (!g) continue;
-    map[g.id] = tagsPart.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
-  }
-  state.dietaryByGuest = map;
+function editGuestDietary(gid) {
+  const guest = state.guests.find(g => g.id === gid);
+  if (!guest) return;
+  const current = (state.dietaryByGuest[gid] || []).join(', ');
+  const next = prompt(`Dietary / allergy tags for ${guest.name}\n(Comma separated, e.g. vegan, nuts, gluten-free)`, current);
+  if (next === null) return;
+  const tags = next.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+  if (tags.length) state.dietaryByGuest[gid] = tags;
+  else delete state.dietaryByGuest[gid];
   save();
   render();
 }
@@ -971,12 +978,6 @@ function render() {
   hostView.classList.toggle('active', !!state.hostMode);
   if (state.hostMode) renderHostResults(document.getElementById('host-search').value || '');
   document.getElementById('constraints-input').value = state.constraintsText || '';
-  const dietaryText = Object.entries(state.dietaryByGuest || {})
-    .map(([gid, tags]) => {
-      const g = state.guests.find(x => x.id === gid);
-      return g ? `${g.name}: ${tags.join(', ')}` : '';
-    }).filter(Boolean).join('\n');
-  document.getElementById('dietary-input').value = dietaryText;
 
   // Stats
   const total = state.guests.length;
@@ -1034,6 +1035,7 @@ function render() {
       const dietaryLine = (state.dietaryByGuest[g.id] || []).length ? `<div class="dietary-line">${state.dietaryByGuest[g.id].join(', ')}</div>` : '';
       return `<div class="guest-row" style="${dim}" draggable="true" data-gid="${g.id}" data-tid="${t.id}">
         <div class="guest-left">
+          <button class="diet-btn" draggable="false" data-diet-gid="${g.id}" title="Edit dietary/allergy">✎</button>
           <div class="avatar" style="background:${bg};color:${tx}">${initials(g.name)}</div>
           <div>
             <span class="guest-name-text">${hl(g.name)}</span>
@@ -1092,6 +1094,10 @@ function render() {
 
     card.querySelectorAll('[draggable=true]').forEach(row => {
       row.addEventListener('dragstart', e => {
+        if (e.target && e.target.closest && e.target.closest('.diet-btn')) {
+          e.preventDefault();
+          return;
+        }
         e.dataTransfer.setData('gid', row.dataset.gid);
         e.dataTransfer.setData('from', row.dataset.tid);
         setTimeout(() => row.classList.add('dragging'), 0);
@@ -1123,8 +1129,12 @@ function render() {
   ug.forEach(g => {
     const chip = document.createElement('div');
     chip.className = 'chip'; chip.draggable = true;
-    chip.innerHTML = `<span class="chip-init">${initials(g.name)}</span>${hl(g.name)}`;
+    chip.innerHTML = `<span class="chip-init">${initials(g.name)}</span>${hl(g.name)} <button class="diet-btn" draggable="false" data-diet-gid="${g.id}" title="Edit dietary/allergy">✎</button>`;
     chip.addEventListener('dragstart', e => {
+      if (e.target && e.target.classList && e.target.classList.contains('diet-btn')) {
+        e.preventDefault();
+        return;
+      }
       e.dataTransfer.setData('gid', g.id);
       e.dataTransfer.setData('from', '');
       setTimeout(() => chip.classList.add('dragging'), 0);
@@ -1132,7 +1142,17 @@ function render() {
     chip.addEventListener('dragend', () => chip.classList.remove('dragging'));
     chipsEl.appendChild(chip);
   });
+
 }
+
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.diet-btn');
+  if (!btn) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const gid = btn.dataset.dietGid;
+  if (gid) editGuestDietary(gid);
+});
 
 if (bc) {
   bc.onmessage = (event) => {
