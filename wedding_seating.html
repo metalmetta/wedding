@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bebidos Wedding — Seating Planner</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream: #FAF7F2;
+    --parchment: #F2EDE4;
+    --gold: #B8935A;
+    --gold-light: #D4B483;
+    --gold-pale: #EDE0C8;
+    --ink: #2C2416;
+    --ink-mid: #6B5C45;
+    --ink-light: #A08C70;
+    --ink-faint: #D6C9B4;
+    --white: #FFFEFB;
+    --red-soft: #C4534A;
+    --green-soft: #4A7C59;
+    --amber-soft: #B8774A;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Jost', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    font-weight: 300;
+    min-height: 100vh;
+  }
+
+  /* — Background ornament — */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(ellipse 80% 60% at 10% 10%, rgba(184,147,90,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 80% at 90% 90%, rgba(184,147,90,0.05) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page { position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: 0 2rem 4rem; }
+
+  /* — Header — */
+  .header {
+    text-align: center;
+    padding: 4rem 0 3rem;
+    position: relative;
+  }
+  .header-ornament {
+    display: flex; align-items: center; justify-content: center; gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .header-ornament::before, .header-ornament::after {
+    content: '';
+    height: 1px; width: 80px;
+    background: linear-gradient(to right, transparent, var(--gold));
+  }
+  .header-ornament::after { background: linear-gradient(to left, transparent, var(--gold)); }
+  .ornament-diamond {
+    width: 8px; height: 8px;
+    background: var(--gold);
+    transform: rotate(45deg);
+  }
+  .header h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.8rem, 5vw, 4.5rem);
+    font-weight: 300;
+    letter-spacing: 0.04em;
+    line-height: 1.1;
+    color: var(--ink);
+  }
+  .header h1 em {
+    font-style: italic;
+    color: var(--gold);
+  }
+  .header-sub {
+    margin-top: 0.75rem;
+    font-size: 0.8rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-light);
+  }
+
+  /* — Toolbar — */
+  .toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 1rem; flex-wrap: wrap;
+    padding: 1.25rem 1.5rem;
+    background: var(--white);
+    border: 1px solid var(--ink-faint);
+    border-radius: 2px;
+    margin-bottom: 2rem;
+  }
+  .stats { display: flex; gap: 2rem; flex-wrap: wrap; }
+  .stat { text-align: center; }
+  .stat-val {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.6rem; font-weight: 500;
+    color: var(--ink); line-height: 1;
+  }
+  .stat-label { font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-light); margin-top: 2px; }
+  .toolbar-right { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
+  .search-wrap { position: relative; }
+  .search-wrap input {
+    background: var(--cream);
+    border: 1px solid var(--ink-faint);
+    border-radius: 1px;
+    padding: 8px 12px 8px 32px;
+    font-family: 'Jost', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 300;
+    color: var(--ink);
+    width: 200px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-wrap input:focus { border-color: var(--gold); }
+  .search-wrap input::placeholder { color: var(--ink-light); }
+  .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--ink-light); font-size: 13px; pointer-events: none; }
+  .btn {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 8px 16px;
+    background: transparent;
+    border: 1px solid var(--ink-faint);
+    color: var(--ink-mid);
+    cursor: pointer;
+    border-radius: 1px;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .btn:hover { border-color: var(--gold); color: var(--gold); }
+  .btn.primary { background: var(--gold); border-color: var(--gold); color: var(--white); }
+  .btn.primary:hover { background: var(--gold-light); border-color: var(--gold-light); }
+
+  /* — Tables grid — */
+  .tables-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-bottom: 3rem;
+  }
+
+  .table-card {
+    background: var(--white);
+    border: 1px solid var(--ink-faint);
+    border-radius: 2px;
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .table-card:hover { border-color: var(--gold-light); }
+  .table-card.drop-target { border-color: var(--gold); border-style: dashed; box-shadow: 0 0 0 3px rgba(184,147,90,0.1); }
+  .table-card.over-capacity { border-color: var(--red-soft); }
+
+  /* Round table visual */
+  .round-table-wrap {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 1.5rem 1rem 0.5rem;
+    background: var(--parchment);
+    border-bottom: 1px solid var(--ink-faint);
+    position: relative;
+  }
+  .round-table-svg { display: block; overflow: visible; }
+  .seat-badge {
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 1px;
+    font-weight: 400;
+    margin-top: 6px;
+    margin-bottom: 4px;
+  }
+  .badge-empty { background: var(--parchment); color: var(--ink-light); border: 1px solid var(--ink-faint); }
+  .badge-ok { background: rgba(74,124,89,0.1); color: var(--green-soft); border: 1px solid rgba(74,124,89,0.2); }
+  .badge-full { background: rgba(184,119,74,0.1); color: var(--amber-soft); border: 1px solid rgba(184,119,74,0.2); }
+  .badge-over { background: rgba(196,83,74,0.1); color: var(--red-soft); border: 1px solid rgba(196,83,74,0.2); }
+
+  .table-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.05rem;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    cursor: text;
+    border-bottom: 1px dashed transparent;
+    transition: border-color 0.15s;
+    outline: none;
+    text-align: center;
+    display: block;
+  }
+  .table-title:hover { border-bottom-color: var(--gold-light); }
+  .table-title:focus { border-bottom-color: var(--gold); color: var(--gold); }
+
+  /* Guest list below the table */
+  .guests-list { padding: 4px 10px; min-height: 20px; }
+
+  .guest-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 4px 6px; border-radius: 1px;
+    cursor: grab;
+    transition: background 0.12s;
+    user-select: none;
+  }
+  .guest-row:hover { background: var(--parchment); }
+  .guest-row.dragging { opacity: 0.35; }
+
+  .guest-left { display: flex; align-items: center; gap: 7px; }
+  .avatar {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 7px; font-weight: 500;
+    flex-shrink: 0;
+  }
+  .guest-name-text { font-size: 0.78rem; font-weight: 300; color: var(--ink); }
+
+  .rm-btn {
+    opacity: 0;
+    width: 15px; height: 15px;
+    border-radius: 50%;
+    background: none;
+    border: 1px solid var(--ink-faint);
+    cursor: pointer;
+    font-size: 10px;
+    color: var(--ink-light);
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity 0.15s, background 0.15s;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+  .guest-row:hover .rm-btn { opacity: 1; }
+  .rm-btn:hover { background: rgba(196,83,74,0.1); border-color: var(--red-soft); color: var(--red-soft); }
+
+  .add-row {
+    padding: 6px 12px;
+    border-top: 1px solid var(--ink-faint);
+    background: var(--cream);
+  }
+  .add-input {
+    width: 100%; border: none; background: transparent;
+    font-family: 'Jost', sans-serif;
+    font-size: 0.75rem; font-weight: 300;
+    color: var(--ink-mid); outline: none; padding: 3px 0;
+  }
+  .add-input::placeholder { color: var(--ink-faint); font-style: italic; }
+
+  /* — Divider — */
+  .section-divider {
+    display: flex; align-items: center; gap: 1.5rem;
+    margin: 2.5rem 0 1.5rem;
+  }
+  .section-divider::before, .section-divider::after {
+    content: ''; flex: 1; height: 1px;
+    background: linear-gradient(to right, transparent, var(--ink-faint));
+  }
+  .section-divider::after { background: linear-gradient(to left, transparent, var(--ink-faint)); }
+  .section-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.9rem; font-weight: 400; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--ink-light);
+    white-space: nowrap;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .unassigned-count-badge {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.65rem; font-weight: 400;
+    background: var(--gold-pale); color: var(--gold);
+    padding: 2px 7px; border-radius: 99px;
+    letter-spacing: 0.05em;
+  }
+
+  /* — Unassigned chips — */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    background: var(--white);
+    border: 1px solid var(--ink-faint);
+    border-radius: 1px;
+    padding: 5px 12px;
+    font-size: 0.78rem; font-weight: 300;
+    cursor: grab;
+    display: flex; align-items: center; gap: 6px;
+    user-select: none;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .chip:hover { border-color: var(--gold-light); background: var(--parchment); }
+  .chip.dragging { opacity: 0.35; }
+  .chip-init {
+    font-size: 8px; font-weight: 500;
+    background: var(--parchment); border-radius: 99px;
+    padding: 1px 5px; color: var(--ink-mid);
+    letter-spacing: 0.05em;
+  }
+
+  .all-assigned-msg {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1rem; font-style: italic; color: var(--gold);
+    padding: 1rem 0;
+  }
+
+  /* — Animations — */
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .table-card { animation: fadeIn 0.3s ease both; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="header">
+    <div class="header-ornament">
+      <div class="ornament-diamond"></div>
+    </div>
+    <h1>Bebidos <em>&</em> Bebidas</h1>
+    <p class="header-sub">Seating arrangements · Wedding dinner</p>
+  </header>
+
+  <div class="toolbar">
+    <div class="stats" id="stats"></div>
+    <div class="toolbar-right">
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input type="text" id="search" placeholder="Search guest…" oninput="filterGuests(this.value)" />
+      </div>
+      <button class="btn primary" onclick="autoAssign()">Auto-assign →</button>
+      <button class="btn" onclick="clearAll()">Clear all</button>
+      <button class="btn" onclick="exportCSV()">Export CSV</button>
+      <button class="btn" onclick="exportPDF()" id="pdf-btn">Download PDF</button>
+      <button class="btn" onclick="resetSaved()" title="Wipe saved data and start fresh">Reset saved</button>
+    </div>
+  </div>
+
+  <div class="tables-grid" id="tables-grid"></div>
+
+  <div class="section-divider">
+    <span class="section-title">
+      Unassigned guests
+      <span class="unassigned-count-badge" id="unassigned-count">0</span>
+    </span>
+  </div>
+  <div class="chips" id="chips"></div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+const SEATS = 10;
+
+const TABLES = [
+  {id:'lussemburgo',name:'Lussemburgo'},
+  {id:'londra',name:'Londra'},
+  {id:'siviglia',name:'Siviglia'},
+  {id:'parigi',name:'Parigi'},
+  {id:'buenos-aires',name:'Buenos Aires'},
+  {id:'new-york',name:'New York'},
+  {id:'madeira',name:'Madeira'},
+  {id:'madrid',name:'Madrid'},
+  {id:'lima',name:'Lima'},
+  {id:'santiago',name:'Santiago de Chile'},
+  {id:'lisbona',name:'Lisbona'},
+  {id:'barcellona',name:'Barcellona'},
+  {id:'roma',name:'Roma'},
+  {id:'amsterdam',name:'Amsterdam'},
+  {id:'vienna',name:'Vienna'},
+  {id:'dublino',name:'Dublino'},
+  {id:'atene',name:'Atene'},
+  {id:'praga',name:'Praga'},
+  {id:'toronto',name:'Toronto'}
+];
+
+const PALETTE = [
+  ['#EDE0C8','#8C6A2F'],['#D4E8D4','#3A6645'],['#D8E4F0','#2E5C8A'],
+  ['#F0DDD8','#8A3E36'],['#E8DFF0','#5A3E8A'],['#F0EDD8','#7A6A2E'],
+  ['#D8EEE8','#2E7A62'],['#F0D8E8','#8A2E6A'],['#E4E4D8','#5A5A36'],
+  ['#D8ECF0','#2E6A8A'],['#F0E8D8','#8A622E'],['#E8F0D8','#5A8A2E'],
+  ['#F0D8D8','#8A2E2E'],['#D8D8F0','#2E2E8A'],['#E8F0EC','#2E7A50'],
+  ['#F0EAD8','#8A702E'],['#D8EAF0','#2E6A8A'],['#EAD8F0','#6A2E8A'],
+  ['#D8F0EA','#2E8A70']
+];
+
+const GUESTS_RAW = [
+  'Enrico Valentini','Matteo Ricci','Davide Rossi','Martina Pedrelli','Alberto Cacchi',
+  'Maria Chiara Ricci','Asia Magnani','Roberto Casanova','Michela Maltoni','Gianni Conficoni',
+  'Marco Rossi Red','Veronica Bazzocchi','Marco Rossi 2','Susanna Perticari','Simone Piccirillo',
+  'Gazza','Riccardo Lombardi','Matteo Barilli','Virginia Casadei','Pietro Fantini',
+  'Laura Bartoli','Lorenzo Cacchi','Camilla Toni','Nicolò Serani','Pietro Piraccini',
+  'Caterina Basler','Martina Pattuzzi','Martina Nicolini','Nunzio Lo Regio','Isa di Nunzio',
+  'Simone Severi','Valentino Mazzariello','Luigi Verdad','Stefano Surace','Giulio Sisto',
+  'Piero Ronchetti','Giacomo Graglia','Roberta Cannella','Alberto Muzzioli','Yassine',
+  'Luca Vimercati','Martina Vime','Riccardo Biscuso','Luca Picciano','Clarissa Zaramella',
+  'Alessandro Falco','Katie Crombie','Parth Parikh','Josemi Espejo','Jasenko',
+  'Sush','Max Lobossonaire','Maria Adami','Christos Apostolidis','Aleksandar Jonkozov',
+  'Bogi Aleks','Gianluca Baronchelli','Camilla Sinatra','Giacomo Mazzotti','Federica Micia',
+  'Fra Tonetti','Daniele Germinale','Lucy di Dani','Eleonora Paci','Marco Mariani',
+  'Maria Pia Urietti','Lucia Mariani','Giulia Mariani','Leon Mariani','Aida',
+  'Giacomo Benini','Valentina Urietti','Zoe Gardelli','Febe Gardelli','Leo Gardelli',
+  'Elio Gardelli','Luca Gardelli','Nonna Lella','Nonna Idalma','Fabio Mariani',
+  'Novella Mariani','Margherita Mariani','Federico Mariani','Emma Mariani','Giulia Luziatelli',
+  'Alessio Cosentino','Milena Valentini','Fabio Valentini','Corrado Pedrelli','Bez',
+  'Sandra Bez','Sabrina Pedrelli','Simonetta Biguzzi','Walter Fantini','Valentina Fantini',
+  'Fabrizio Varone','Beatrice Varone','Sara Casadei','Lorenzo Di Fazio','Elena Giovannini',
+  'Francesco Placucci','Silvia Buriani','Luca (2)','Andrea Braschi','Camilla Stanghellini',
+  'Riccardo Pedrini','Elena','Viola Paganelli','Davide Paci','Sara Rossetti',
+  'Michela Nannini','Lorenzo Frascaroli','Beatrice Simon','Giacomo Bacchi Reggiani','Sofia Diani',
+  'Gigi','Marianna Gallegati','Chiara Chechi','Mattia Caprini','Sofia Urbinati',
+  'Gianmaria Cerchione','Federica Baldini','Jennifer Fabbri','Sara Guiducci','Ale Zoppi',
+  'Claudia Rimondi','Alberto Melloni','Alice Sisti','Veronica Sanna','Alessandro Moroso Vero',
+  'Ylenia Sette','Elisa Guasconi','Luca (3)','Giulia Rossi','Olbany',
+  'Sara Passatempi','Moroso Sara S.','Margherita Sacchetti','Matteo (2)','Gianluca Biondi',
+  'Carolina','Federica Biondi','Elena Galassi','Matteo Succi','Marika Foschi',
+  'Mattia Magnani','Laura Spazioso','Lorenzo Moroso Laura','Andrea Zaffino','Matilde Ghilardi',
+  'Giuseppe Amoroso','Filippo Benetello','Enrico Catani','Samantha Jayakuru','Ana Rodrigo',
+  'Irene Leone','Bianca Masotti','Diego Rota','Fiammetta Biguzzi','Claudio Bissi',
+  'Chiara Bissi','Barbara Bissi','Felix','Seba','Justin',
+  'Andrea Biguzzi','Lella Tartarotti','Daniele Biguzzi','Elisa Lucchi','Samuele Biguzzi',
+  'Sara Biguzzi','Anna Lucchi','Loredana Pondi','Luca Fantini','Francesca Fantini',
+  'Alessandro Moroso Fra','Silvia Francisconi','Steven Delvina','Alba Bozo','Alessandro Delvecchio',
+  'Nicolas Calderon','Miguelangel Beltran','Vale Barbagelata'
+];
+
+const STORAGE_KEY = 'bebidos_seating_v1';
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const { guests, seats, tableNames } = JSON.parse(saved);
+      // Restore custom table names
+      if (tableNames) tableNames.forEach(({id, name}) => {
+        const t = TABLES.find(t => t.id === id);
+        if (t) t.name = name;
+      });
+      return { guests, seats, search: '' };
+    }
+  } catch(e) {}
+  return {
+    guests: GUESTS_RAW.map((n,i) => ({id:'g'+i, name:n})),
+    seats: Object.fromEntries(TABLES.map(t => [t.id, []])),
+    search: ''
+  };
+}
+
+function save() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      guests: state.guests,
+      seats: state.seats,
+      tableNames: TABLES.map(({id, name}) => ({id, name}))
+    }));
+  } catch(e) {}
+}
+
+let state = loadState();
+
+const initials = n => n.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]?.toUpperCase()||'').join('');
+const assignedIds = () => new Set(Object.values(state.seats).flat());
+const unassigned = () => { const a = assignedIds(); return state.guests.filter(g => !a.has(g.id)); };
+const tableGuests = tid => state.seats[tid].map(id => state.guests.find(g=>g.id===id)).filter(Boolean);
+
+function autoAssign() {
+  const u = unassigned(); let i = 0;
+  for (const t of TABLES) {
+    while (state.seats[t.id].length < SEATS && i < u.length) state.seats[t.id].push(u[i++].id);
+    if (i >= u.length) break;
+  }
+  save(); render();
+}
+
+function clearAll() {
+  TABLES.forEach(t => { state.seats[t.id] = []; });
+  save(); render();
+}
+
+function resetSaved() {
+  if (!confirm('Wipe all saved assignments and table names, and start fresh?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  TABLES.forEach((t, i) => {
+    const defaults = ['Lussemburgo','Londra','Siviglia','Parigi','Buenos Aires','New York','Madeira','Madrid','Lima','Santiago de Chile','Lisbona','Barcellona','Roma','Amsterdam','Vienna','Dublino','Atene','Praga','Toronto'];
+    t.name = defaults[i] || t.id;
+  });
+  state = {
+    guests: GUESTS_RAW.map((n,i) => ({id:'g'+i, name:n})),
+    seats: Object.fromEntries(TABLES.map(t => [t.id, []])),
+    search: ''
+  };
+  render();
+}
+
+function removeGuest(gid) {
+  for (const t of TABLES) state.seats[t.id] = state.seats[t.id].filter(id=>id!==gid);
+  save(); render();
+}
+
+function addGuest(tid, name) {
+  name = name.trim(); if (!name) return;
+  let g = state.guests.find(g=>g.name.toLowerCase()===name.toLowerCase());
+  if (g) { if (assignedIds().has(g.id)) return; }
+  else { g = {id:'g'+Date.now(), name}; state.guests.push(g); }
+  if (state.seats[tid].length < SEATS) state.seats[tid].push(g.id);
+  save(); render();
+}
+
+function filterGuests(q) { state.search = q.toLowerCase(); render(); }
+
+function exportCSV() {
+  let csv = 'Tavolo,Ospite\n';
+  for (const t of TABLES) {
+    const gs = tableGuests(t.id);
+    if (!gs.length) csv += `${t.name},(vuoto)\n`;
+    else gs.forEach(g => { csv += `${t.name},${g.name}\n`; });
+  }
+  unassigned().forEach(g => { csv += `(non assegnato),${g.name}\n`; });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8;'}));
+  a.download = 'bebidos_seating.csv'; a.click();
+}
+
+function exportPDF() {
+  const btn = document.getElementById('pdf-btn');
+  btn.textContent = 'Generating…';
+  btn.disabled = true;
+
+  setTimeout(() => {
+    try {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      const PW = 297, PH = 210;
+      const MARGIN = 14;
+
+      // Helpers
+      const hex2rgb = h => { const n=parseInt(h.replace('#',''),16); return [(n>>16)&255,(n>>8)&255,n&255]; };
+      const setFill = (doc,h) => { const [r,g,b]=hex2rgb(h); doc.setFillColor(r,g,b); };
+      const setStroke = (doc,h) => { const [r,g,b]=hex2rgb(h); doc.setDrawColor(r,g,b); };
+      const setTextColor = (doc,h) => { const [r,g,b]=hex2rgb(h); doc.setTextColor(r,g,b); };
+
+      const CREAM='#FAF7F2', GOLD='#B8935A', INK='#2C2416', INK_MID='#6B5C45', INK_LIGHT='#A08C70', INK_FAINT='#D6C9B4';
+      const TABLES_PER_PAGE = 6; // 2 rows × 3 cols
+      const COLS = 3, ROWS = 2;
+      const usableW = PW - MARGIN*2;
+      const usableH = PH - MARGIN*2 - 20; // leave header room
+      const cellW = usableW / COLS;
+      const cellH = usableH / ROWS;
+      const tableR = Math.min(cellW, cellH) * 0.22;
+      const seatR = tableR * 0.18;
+      const orbitR = tableR + seatR + 1.5;
+
+      const pages = Math.ceil(TABLES.length / TABLES_PER_PAGE);
+
+      for (let pg = 0; pg < pages; pg++) {
+        if (pg > 0) doc.addPage();
+
+        // Page background
+        setFill(doc, CREAM);
+        doc.rect(0, 0, PW, PH, 'F');
+
+        // Header
+        setTextColor(doc, INK);
+        doc.setFont('times', 'italic');
+        doc.setFontSize(18);
+        doc.text('Bebidos & Bebidas', PW/2, MARGIN + 4, {align:'center'});
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7);
+        setTextColor(doc, INK_LIGHT);
+        doc.text('SEATING ARRANGEMENTS · WEDDING DINNER', PW/2, MARGIN + 9, {align:'center'});
+
+        // Gold ornament line
+        setStroke(doc, GOLD);
+        doc.setLineWidth(0.3);
+        doc.line(MARGIN + usableW*0.25, MARGIN+11.5, MARGIN + usableW*0.75, MARGIN+11.5);
+        doc.setLineWidth(0.1);
+
+        const topY = MARGIN + 16;
+
+        const tableBatch = TABLES.slice(pg * TABLES_PER_PAGE, (pg+1) * TABLES_PER_PAGE);
+
+        tableBatch.forEach((t, i) => {
+          const col = i % COLS;
+          const row = Math.floor(i / COLS);
+          const cx = MARGIN + col * cellW + cellW/2;
+          const cy = topY + row * cellH + cellH * 0.38;
+          const [bg, tx] = PALETTE[TABLES.indexOf(t) % PALETTE.length];
+          const guests = tableGuests(t.id);
+          const count = guests.length;
+
+          // Table circle
+          setFill(doc, bg);
+          setStroke(doc, tx);
+          doc.setLineWidth(0.6);
+          doc.circle(cx, cy, tableR, 'FD');
+
+          // Table number
+          doc.setFont('times', 'bold');
+          doc.setFontSize(9);
+          setTextColor(doc, tx);
+          doc.text(String(TABLES.indexOf(t)+1), cx, cy - 2.5, {align:'center'});
+
+          // Seat count in table center
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(6);
+          setTextColor(doc, tx);
+          doc.text(`${count}/${SEATS}`, cx, cy + 3.5, {align:'center'});
+
+          // Draw seats around table
+          for (let s = 0; s < SEATS; s++) {
+            const angle = (s / SEATS) * 2 * Math.PI - Math.PI/2;
+            const sx = cx + orbitR * Math.cos(angle);
+            const sy = cy + orbitR * Math.sin(angle);
+            const g = guests[s];
+            if (g) {
+              setFill(doc, bg);
+              setStroke(doc, tx);
+              doc.setLineWidth(0.4);
+              doc.circle(sx, sy, seatR, 'FD');
+              doc.setFont('helvetica', 'bold');
+              doc.setFontSize(4.5);
+              setTextColor(doc, tx);
+              const ini = g.name.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]?.toUpperCase()||'').join('');
+              doc.text(ini, sx, sy + 1.5, {align:'center'});
+            } else {
+              doc.setFillColor(240,235,228);
+              setStroke(doc, INK_FAINT);
+              doc.setLineWidth(0.2);
+              doc.setLineDash([1,1]);
+              doc.circle(sx, sy, seatR, 'FD');
+              doc.setLineDash([]);
+            }
+          }
+
+          // Table name below circle
+          const nameY = cy + orbitR + seatR + 5;
+          doc.setFont('times', 'italic');
+          doc.setFontSize(9);
+          setTextColor(doc, INK);
+          doc.text(t.name, cx, nameY, {align:'center'});
+
+          // Guest list
+          const listY = nameY + 4;
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(6);
+          const lineH = 3.2;
+          const half = Math.ceil(guests.length / 2);
+          guests.forEach((g, gi) => {
+            const col2 = gi < half ? 0 : 1;
+            const row2 = gi < half ? gi : gi - half;
+            const lx = cx - cellW*0.2 + col2 * cellW*0.2;
+            const ly = listY + row2 * lineH;
+            setTextColor(doc, INK_MID);
+            doc.text((gi+1) + '. ' + g.name, lx, ly, {align: col2===0 ? 'right' : 'left'});
+          });
+          if (guests.length === 0) {
+            setTextColor(doc, INK_FAINT);
+            doc.text('— no guests assigned —', cx, listY, {align:'center'});
+          }
+        });
+
+        // Page footer
+        setTextColor(doc, INK_FAINT);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(6);
+        doc.text(`Page ${pg+1} of ${pages}`, PW - MARGIN, PH - MARGIN + 2, {align:'right'});
+        const u = unassigned().length;
+        if (u > 0) doc.text(`${u} guests unassigned`, MARGIN, PH - MARGIN + 2);
+      }
+
+      doc.save('bebidos_seating.pdf');
+    } catch(e) {
+      alert('PDF generation failed: ' + e.message);
+    }
+    btn.textContent = 'Download PDF';
+    btn.disabled = false;
+  }, 50);
+}
+
+
+function hl(name) {
+  if (!state.search) return name;
+  const i = name.toLowerCase().indexOf(state.search);
+  if (i < 0) return name;
+  return name.slice(0,i)+'<mark style="background:rgba(184,147,90,0.25);border-radius:1px;padding:0 1px">'+name.slice(i,i+state.search.length)+'</mark>'+name.slice(i+state.search.length);
+}
+
+function renameTable(el) {
+  const tid = el.dataset.tid;
+  const newName = el.textContent.trim();
+  const t = TABLES.find(t => t.id === tid);
+  if (t && newName) t.name = newName;
+  else if (t) el.textContent = t.name;
+  save();
+}
+
+function render() {
+  // Stats
+  const total = state.guests.length;
+  const assigned = assignedIds().size;
+  const u = unassigned().length;
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><div class="stat-val">${total}</div><div class="stat-label">Guests</div></div>
+    <div class="stat"><div class="stat-val">${assigned}</div><div class="stat-label">Assigned</div></div>
+    <div class="stat"><div class="stat-val">${u}</div><div class="stat-label">Unassigned</div></div>
+    <div class="stat"><div class="stat-val">${TABLES.length}</div><div class="stat-label">Tables</div></div>`;
+
+  document.getElementById('unassigned-count').textContent = u;
+
+  // Tables
+  const grid = document.getElementById('tables-grid');
+  grid.innerHTML = '';
+  TABLES.forEach((t, ti) => {
+    const guests = tableGuests(t.id);
+    const count = guests.length;
+    const [bg, tx] = PALETTE[ti % PALETTE.length];
+    const badgeClass = count === 0 ? 'badge-empty' : count < SEATS ? 'badge-ok' : count === SEATS ? 'badge-full' : 'badge-over';
+
+    const card = document.createElement('div');
+    card.className = 'table-card' + (count > SEATS ? ' over-capacity' : '');
+    card.style.animationDelay = (ti * 0.03) + 's';
+    card.addEventListener('dragover', e => {
+      if (e.target.classList.contains('table-title')) return;
+      e.preventDefault(); card.classList.add('drop-target');
+    });
+    card.addEventListener('dragleave', () => card.classList.remove('drop-target'));
+    card.addEventListener('drop', e => {
+      e.preventDefault(); card.classList.remove('drop-target');
+      const gid = e.dataTransfer.getData('gid');
+      const from = e.dataTransfer.getData('from');
+      if (!gid) return;
+      if (from && state.seats[from]) state.seats[from] = state.seats[from].filter(id=>id!==gid);
+      if (!state.seats[t.id].includes(gid) && state.seats[t.id].length < SEATS) state.seats[t.id].push(gid);
+      save(); render();
+    });
+
+    let rows = guests.map(g => {
+      const dim = state.search && !g.name.toLowerCase().includes(state.search) ? 'opacity:0.2;' : '';
+      return `<div class="guest-row" style="${dim}" draggable="true" data-gid="${g.id}" data-tid="${t.id}">
+        <div class="guest-left">
+          <div class="avatar" style="background:${bg};color:${tx}">${initials(g.name)}</div>
+          <span class="guest-name-text">${hl(g.name)}</span>
+        </div>
+        <button class="rm-btn" onclick="removeGuest('${g.id}')">×</button>
+      </div>`;
+    }).join('');
+
+    // Build round table SVG
+    const R = 72;   // table radius
+    const SR = 13;  // seat radius
+    const OR = R + SR + 8; // orbit radius
+    const CX = OR + SR + 4;
+    const CY = OR + SR + 4;
+    const svgSize = (CX + SR + 4) * 2;
+
+    let seats = '';
+    for (let s = 0; s < SEATS; s++) {
+      const angle = (s / SEATS) * 2 * Math.PI - Math.PI / 2;
+      const sx = CX + OR * Math.cos(angle);
+      const sy = CY + OR * Math.sin(angle);
+      const g = guests[s];
+      if (g) {
+        const dim = state.search && !g.name.toLowerCase().includes(state.search) ? 0.25 : 1;
+        seats += `<g opacity="${dim}" class="seat-g" data-gid="${g.id}" data-tid="${t.id}" draggable="true">
+          <circle cx="${sx}" cy="${sy}" r="${SR}" fill="${bg}" stroke="${tx}" stroke-width="1.2"/>
+          <text x="${sx}" y="${sy + 3}" text-anchor="middle" font-family="Jost,sans-serif" font-size="7" font-weight="500" fill="${tx}">${initials(g.name)}</text>
+        </g>`;
+      } else {
+        seats += `<circle cx="${sx}" cy="${sy}" r="${SR}" fill="none" stroke="#D6C9B4" stroke-width="1" stroke-dasharray="3 2"/>`;
+      }
+    }
+
+    const svgEl = `<svg class="round-table-svg" width="${svgSize}" height="${svgSize}" viewBox="0 0 ${svgSize} ${svgSize}" xmlns="http://www.w3.org/2000/svg">
+      ${seats}
+      <circle cx="${CX}" cy="${CY}" r="${R}" fill="${bg}" stroke="${tx}" stroke-width="1.5"/>
+      <text x="${CX}" y="${CY - 6}" text-anchor="middle" font-family="Cormorant Garamond,serif" font-size="13" font-weight="500" fill="${tx}">${ti+1}</text>
+      <text x="${CX}" y="${CY + 10}" text-anchor="middle" font-family="Jost,sans-serif" font-size="9" font-weight="300" fill="${tx}" opacity="0.7">${count}/${SEATS}</text>
+    </svg>`;
+
+    card.innerHTML = `
+      <div class="round-table-wrap">
+        ${svgEl}
+        <span class="table-title" contenteditable="true" spellcheck="false" data-tid="${t.id}" onblur="renameTable(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${t.name}</span>
+        <span class="seat-badge ${badgeClass}">${count}/${SEATS} seats</span>
+      </div>
+      <div class="guests-list" id="glist-${t.id}">${rows}</div>
+      <div class="add-row">
+        <input class="add-input" placeholder="+ Add guest…" data-tid="${t.id}"
+          onkeydown="if(event.key==='Enter'&&this.value.trim()){addGuest(this.dataset.tid,this.value);this.value='';}" />
+      </div>`;
+
+    card.querySelectorAll('[draggable=true]').forEach(row => {
+      row.addEventListener('dragstart', e => {
+        e.dataTransfer.setData('gid', row.dataset.gid);
+        e.dataTransfer.setData('from', row.dataset.tid);
+        setTimeout(() => row.classList.add('dragging'), 0);
+      });
+      row.addEventListener('dragend', () => row.classList.remove('dragging'));
+    });
+
+    // SVG seat drag (separate — SVG elements need pointer events)
+    card.querySelectorAll('.seat-g').forEach(sg => {
+      sg.style.cursor = 'grab';
+      sg.addEventListener('mousedown', e => { e.stopPropagation(); });
+    });
+
+    grid.appendChild(card);
+  });
+
+  // Chips
+  const chipsEl = document.getElementById('chips');
+  const ug = state.search ? unassigned().filter(g => g.name.toLowerCase().includes(state.search)) : unassigned();
+  if (!ug.length) {
+    chipsEl.innerHTML = '<p class="all-assigned-msg">All guests have been seated ✦</p>';
+    return;
+  }
+  chipsEl.innerHTML = '';
+  ug.forEach(g => {
+    const chip = document.createElement('div');
+    chip.className = 'chip'; chip.draggable = true;
+    chip.innerHTML = `<span class="chip-init">${initials(g.name)}</span>${hl(g.name)}`;
+    chip.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('gid', g.id);
+      e.dataTransfer.setData('from', '');
+      setTimeout(() => chip.classList.add('dragging'), 0);
+    });
+    chip.addEventListener('dragend', () => chip.classList.remove('dragging'));
+    chipsEl.appendChild(chip);
+  });
+}
+
+render();
+</script>
+</body>
+</html>
