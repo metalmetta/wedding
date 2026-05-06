@@ -397,11 +397,104 @@
     font-size: 0.8rem;
   }
 
+  /* — Two-column layout — */
+  .content-layout {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+  }
+
+  /* — Guest sidebar — */
+  .guest-sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100vh - 2rem);
+    display: flex;
+    flex-direction: column;
+    background: var(--white);
+    border: 1px solid var(--ink-faint);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .sidebar-header {
+    padding: 0.9rem 1rem 0.7rem;
+    border-bottom: 1px solid var(--ink-faint);
+    background: var(--parchment);
+    flex-shrink: 0;
+  }
+
+  .sidebar-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.85rem;
+    font-weight: 400;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-light);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sidebar-body {
+    overflow-y: auto;
+    flex: 1;
+    padding: 0.6rem;
+  }
+
+  .sidebar-body .chips {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .sidebar-body .chip {
+    width: 100%;
+    padding: 6px 10px;
+    font-size: 0.75rem;
+    border-radius: 1px;
+    justify-content: space-between;
+  }
+
+  .sidebar-body .chip .chip-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+  }
+
+  .sidebar-body .chip .chip-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sidebar-body .all-assigned-msg {
+    font-size: 0.8rem;
+    padding: 0.5rem 0;
+    text-align: center;
+  }
+
+  /* — Main content — */
+  .main-content {
+    flex: 1;
+    min-width: 0;
+  }
+
   @media print {
-    .toolbar-right, .planner-panels, .add-row, .rm-btn, .chips, .section-divider, .host-view { display: none !important; }
+    .toolbar-right, .planner-panels, .add-row, .rm-btn, .guest-sidebar, .host-view { display: none !important; }
     .page { max-width: none; padding: 0; }
     .table-card { break-inside: avoid; box-shadow: none; }
     body::before { display: none; }
+    .content-layout { display: block; }
+  }
+
+  @media (max-width: 900px) {
+    .content-layout { flex-direction: column; }
+    .guest-sidebar { width: 100%; position: static; max-height: 200px; }
+    .sidebar-body .chips { flex-direction: row; flex-wrap: wrap; }
+    .sidebar-body .chip { width: auto; }
   }
 
   @media (max-width: 740px) {
@@ -463,15 +556,26 @@
     </div>
   </div>
 
-  <div class="tables-grid" id="tables-grid"></div>
+  <div class="content-layout">
+    <!-- Left sidebar: unassigned guests -->
+    <aside class="guest-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">
+          Unassigned
+          <span class="unassigned-count-badge" id="unassigned-count">0</span>
+        </div>
+      </div>
+      <div class="sidebar-body">
+        <div class="chips" id="chips"></div>
+      </div>
+    </aside>
 
-  <div class="section-divider">
-    <span class="section-title">
-      Unassigned guests
-      <span class="unassigned-count-badge" id="unassigned-count">0</span>
-    </span>
+    <!-- Main: tables grid -->
+    <div class="main-content">
+      <div class="tables-grid" id="tables-grid"></div>
+    </div>
   </div>
-  <div class="chips" id="chips"></div>
+
   <div class="host-view" id="host-view">
     <input class="host-search" id="host-search" placeholder="Find guest quickly…" oninput="renderHostResults(this.value)" />
     <div class="host-results" id="host-results"></div>
@@ -1129,7 +1233,7 @@ function render() {
   ug.forEach(g => {
     const chip = document.createElement('div');
     chip.className = 'chip'; chip.draggable = true;
-    chip.innerHTML = `<span class="chip-init">${initials(g.name)}</span>${hl(g.name)} <button class="diet-btn" draggable="false" data-diet-gid="${g.id}" title="Edit dietary/allergy">✎</button>`;
+    chip.innerHTML = `<div class="chip-left"><span class="chip-init">${initials(g.name)}</span><span class="chip-name">${hl(g.name)}</span></div><button class="diet-btn" draggable="false" data-diet-gid="${g.id}" title="Edit dietary/allergy">✎</button>`;
     chip.addEventListener('dragstart', e => {
       if (e.target && e.target.classList && e.target.classList.contains('diet-btn')) {
         e.preventDefault();
